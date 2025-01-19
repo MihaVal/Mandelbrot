@@ -4,6 +4,7 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Scanner;
 import javax.imageio.ImageIO;
 
 public class MandelbrotViewer extends JFrame {
@@ -56,6 +57,7 @@ public class MandelbrotViewer extends JFrame {
                         zoom(1 / zoomFactor);
                         break;
                     case KeyEvent.VK_S: // Save
+                        promptImageSize();
                         saveImage();
                         break;
                 }
@@ -73,6 +75,17 @@ public class MandelbrotViewer extends JFrame {
             }
         });
 
+        startRendering();
+    }
+
+    private void promptImageSize() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter image width: ");
+        width = scanner.nextInt();
+        System.out.print("Enter image height: ");
+        height = scanner.nextInt();
+        setSize(width, height);
+        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         startRendering();
     }
 
@@ -101,7 +114,7 @@ public class MandelbrotViewer extends JFrame {
 
     private void renderMandelbrot() {
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-
+        long start = System.currentTimeMillis();
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 double real = xMin + x * (xMax - xMin) / width;
@@ -110,6 +123,8 @@ public class MandelbrotViewer extends JFrame {
                 image.setRGB(x, y, color);
             }
         }
+        long end = System.currentTimeMillis();
+        Logger.log("Time single: " + (end - start) + " ms", LogLevel.Info);
     }
 
     private int computePoint(Complex c) {
@@ -134,6 +149,7 @@ public class MandelbrotViewer extends JFrame {
 
     private void saveImage() {
         try {
+            renderMandelbrot(); //render before new size chosen by the user fix100
             File outputfile = new File("mandelbrot.png");
             ImageIO.write(image, "png", outputfile);
             Logger.log("Image saved to " + outputfile.getAbsolutePath(), LogLevel.Success);
