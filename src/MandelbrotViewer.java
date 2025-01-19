@@ -10,7 +10,7 @@ import javax.imageio.ImageIO;
 public class MandelbrotViewer extends JFrame {
     private int width = 800;
     private int height = 600;
-    private static final int MAX_ITER = 50;
+    private static final int MAX_ITER = 100;
     private static final int TARGET_FPS = 60;
 
     private double xMin = -2.0, xMax = 1.0;
@@ -19,16 +19,15 @@ public class MandelbrotViewer extends JFrame {
     private double panSpeed;
     private BufferedImage image;
     private boolean rendering = false;
+    private static boolean headlessMode = false;
 
     public MandelbrotViewer() {
+        if (!headlessMode){
         setTitle("Mandelbrot Set Viewer");
         setSize(width, height);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(true);
-
-        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        panSpeed = 0.1 * (xMax - xMin);
 
         addKeyListener(new KeyAdapter() {
             @Override
@@ -64,6 +63,10 @@ public class MandelbrotViewer extends JFrame {
                 startRendering();
             }
         });
+    }
+
+        image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        panSpeed = 0.1 * (xMax - xMin);
 
 
         addComponentListener(new ComponentAdapter() {
@@ -108,7 +111,7 @@ public class MandelbrotViewer extends JFrame {
         new Thread(() -> {
             renderMandelbrot();
             rendering = false;
-            repaint();
+            if (!headlessMode) repaint();
         }).start();
     }
 
@@ -124,7 +127,7 @@ public class MandelbrotViewer extends JFrame {
             }
         }
         long end = System.currentTimeMillis();
-        Logger.log("Time single: " + (end - start) + " ms", LogLevel.Info);
+        Logger.log("Render time: " + (end - start) + " ms", LogLevel.Info);
     }
 
     private int computePoint(Complex c) {
@@ -149,7 +152,7 @@ public class MandelbrotViewer extends JFrame {
 
     private void saveImage() {
         try {
-            renderMandelbrot(); //render before new size chosen by the user fix100
+            renderMandelbrot(); //render before new size chosen by the user fix
             File outputfile = new File("mandelbrot.png");
             ImageIO.write(image, "png", outputfile);
             Logger.log("Image saved to " + outputfile.getAbsolutePath(), LogLevel.Success);
@@ -180,6 +183,11 @@ public class MandelbrotViewer extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            for (String arg : args) {
+                if (arg.equalsIgnoreCase("--nongui")) {
+                    headlessMode = true;
+                }
+            }
             MandelbrotViewer viewer = new MandelbrotViewer();
             viewer.setVisible(true);
         });
