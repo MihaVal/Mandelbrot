@@ -3,7 +3,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
 
@@ -19,51 +21,54 @@ public class MandelbrotViewer extends JFrame {
     private double panSpeed;
     private BufferedImage image;
     private boolean rendering = false;
-    private static boolean headlessMode = false;
+    //type in command line when launching --nongui or --test to run either of them for testing
+    //if you want the set to just render normally with gui, then leave it as blank
+    private static boolean headlessMode = false; //nongui bool
+    private static boolean runTests = false; // test bool
 
     public MandelbrotViewer() {
-        if (!headlessMode){
-        setTitle("Mandelbrot Set Viewer");
-        setSize(width, height);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(true);
+        if (!headlessMode) {
+            setTitle("Mandelbrot Set Window");
+            setSize(width, height);
+            setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            setLocationRelativeTo(null);
+            setResizable(true);
 
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                switch (e.getKeyCode()) {
-                    case KeyEvent.VK_LEFT: // Movements
-                        xMin -= panSpeed;
-                        xMax -= panSpeed;
-                        break;
-                    case KeyEvent.VK_RIGHT:
-                        xMin += panSpeed;
-                        xMax += panSpeed;
-                        break;
-                    case KeyEvent.VK_UP:
-                        yMin -= panSpeed;
-                        yMax -= panSpeed;
-                        break;
-                    case KeyEvent.VK_DOWN:
-                        yMin += panSpeed;
-                        yMax += panSpeed;
-                        break;
-                    case KeyEvent.VK_1: // Zoom in
-                        zoom(zoomFactor);
-                        break;
-                    case KeyEvent.VK_2: // Zoom out
-                        zoom(1 / zoomFactor);
-                        break;
-                    case KeyEvent.VK_S: // Save
-                        promptImageSize();
-                        saveImage();
-                        break;
+            addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_LEFT: // Movements
+                            xMin -= panSpeed;
+                            xMax -= panSpeed;
+                            break;
+                        case KeyEvent.VK_RIGHT:
+                            xMin += panSpeed;
+                            xMax += panSpeed;
+                            break;
+                        case KeyEvent.VK_UP:
+                            yMin -= panSpeed;
+                            yMax -= panSpeed;
+                            break;
+                        case KeyEvent.VK_DOWN:
+                            yMin += panSpeed;
+                            yMax += panSpeed;
+                            break;
+                        case KeyEvent.VK_1: // Zoom in
+                            zoom(zoomFactor);
+                            break;
+                        case KeyEvent.VK_2: // Zoom out
+                            zoom(1 / zoomFactor);
+                            break;
+                        case KeyEvent.VK_S: // Save
+                            promptImageSize();
+                            saveImage();
+                            break;
+                    }
+                    startRendering();
                 }
-                startRendering();
-            }
-        });
-    }
+            });
+        }
 
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         panSpeed = 0.1 * (xMax - xMin);
@@ -83,9 +88,9 @@ public class MandelbrotViewer extends JFrame {
 
     private void promptImageSize() {
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter image width: ");
+        Logger.log("Enter image width: ", LogLevel.Warn);
         width = scanner.nextInt();
-        System.out.print("Enter image height: ");
+        Logger.log("Enter image height: ", LogLevel.Warn);
         height = scanner.nextInt();
         setSize(width, height);
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -181,15 +186,52 @@ public class MandelbrotViewer extends JFrame {
         }
     }
 
+    private static void runPerformanceTests() {
+        int startSize = 1000;
+        int maxSize = 5000;
+        String csvFile = "mandelbrot_results.csv";
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
+            writer.println("width,height,sequential");
+
+            for (int size = startSize; size <= maxSize; size += 1000) {
+                MandelbrotViewer viewer = new MandelbrotViewer();
+                viewer.width = size;
+                viewer.height = size;
+                long startTime = System.currentTimeMillis();
+                viewer.renderMandelbrot();
+                long endTime = System.currentTimeMillis();
+                long renderTime = endTime - startTime;
+
+                Logger.log("Rendered " + size + "x" + size + " in " + renderTime + " ms", LogLevel.Status);
+                writer.println(size + "," + size + "," + renderTime);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            Logger.log("Error writing CSV file.", LogLevel.Error);
+        }
+    }
+
     public static void main(String[] args) {
+
+
         SwingUtilities.invokeLater(() -> {
             for (String arg : args) {
-                if (arg.equalsIgnoreCase("--nongui")) {
+                if (arg.equalsIgnoreCase("--nongui")) { //no gui render launch option
                     headlessMode = true;
+                } else if (arg.equalsIgnoreCase("--test")) { //render testing option
+                    runTests = true;
                 }
             }
-            MandelbrotViewer viewer = new MandelbrotViewer();
-            viewer.setVisible(true);
+
+            if (runTests) {
+                runPerformanceTests();
+                Logger.log("Performance tests completed. Results saved to mandelbrot_results.csv", LogLevel.Status);
+                System.exit(0); //the file will keep overwriting itself if run n times in a row
+            } else {
+                MandelbrotViewer viewer = new MandelbrotViewer();
+                viewer.setVisible(true);
+            }
         });
     }
 
