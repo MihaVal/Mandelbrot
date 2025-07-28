@@ -123,14 +123,7 @@ public class MandelbrotViewer extends JFrame {
     private void renderMandelbrot() {
         image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         long start = System.currentTimeMillis();
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double real = xMin + x * (xMax - xMin) / width;
-                double imag = yMin + y * (yMax - yMin) / height;
-                int color = computePoint(new Complex(real, imag));
-                image.setRGB(x, y, color);
-            }
-        }
+        // will implement parallel style calculation
         long end = System.currentTimeMillis();
         Logger.log("Render time: " + (end - start) + " ms", LogLevel.Info);
     }
@@ -224,13 +217,21 @@ public class MandelbrotViewer extends JFrame {
                 }
             }
 
+            if (headlessMode) {//completely lost sem tle atm, rad bi no gui +only calculate exec time of that no popup
+                long startTime = System.currentTimeMillis();
+                MandelbrotViewer viewer = new MandelbrotViewer();
+                viewer.renderMandelbrot();
+                long endTime = System.currentTimeMillis();
+                Logger.log("Non-GUI speed: " + (endTime - startTime) + " ms", LogLevel.Status);
+            }
+
             if (runTests) {
                 runPerformanceTests();
                 Logger.log("Performance tests completed. Results saved to mandelbrot_results.csv", LogLevel.Status);
                 System.exit(0); //the file will keep overwriting itself if run n times in a row
             } else {
                 MandelbrotViewer viewer = new MandelbrotViewer();
-                viewer.setVisible(true);
+                viewer.setVisible(true); //some problem here with the nongui setting
             }
         });
     }
