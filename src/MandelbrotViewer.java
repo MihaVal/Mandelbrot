@@ -132,7 +132,10 @@ public class MandelbrotViewer extends JFrame {
             }
         }
         long end = System.currentTimeMillis();
-        Logger.log("Render time: " + (end - start) + " ms", LogLevel.Info);
+        if (!headlessMode) {
+            Logger.log("Render time: " + (end - start) + " ms", LogLevel.Info);
+        }
+
     }
 
     private int computePoint(Complex c) {
