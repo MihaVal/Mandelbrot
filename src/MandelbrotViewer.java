@@ -191,7 +191,7 @@ public class MandelbrotViewer extends JFrame {
 
     private static void runPerformanceTests() {
         int startSize = 1000;
-        int maxSize = 5000;
+        int maxSize = 10000;
         String csvFile = "mandelbrot_results.csv";
 
         try (PrintWriter writer = new PrintWriter(new FileWriter(csvFile))) {
